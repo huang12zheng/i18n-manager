@@ -7,9 +7,9 @@ import { TranslatePayload, TranslationError, TreeItem } from '../types';
 import { getFormattedPath, getParsedFiles } from './files';
 import { getLanguageLabel, getLanguagePath } from './language';
 
-const GOOGLE_TRANSLATE_URL = 'https://translation.googleapis.com/language/translate/v2';
+import translate from 'google-translate-api';
 
-export const translate = async (
+export const trans = async (
   text: string,
   source: string,
   target: string,
@@ -26,28 +26,8 @@ export const translate = async (
   }
 
   try {
-    const response = await fetchAPI(
-      `${GOOGLE_TRANSLATE_URL}?key=${googleTranslateApiKey}`,
-      'POST',
-      {
-        target: targetLanguage,
-        source: sourceLanguage,
-        q: text,
-        format: 'text',
-      },
-      {
-        cancelToken: cancelToken.token,
-      },
-    );
-
-    if (response.status === 200) {
-      return getGoogleTranslateText(response.data);
-    }
-
-    return {
-      path,
-      error: TRANSLATE_ERRORS.genericGoogleTranslateError(sourceLanguage, targetLanguage),
-    };
+    const response = await translate(text, { from: source, to: target });
+    return response.text;
   } catch (e) {
     if (axios.isCancel(e)) {
       throw e;
