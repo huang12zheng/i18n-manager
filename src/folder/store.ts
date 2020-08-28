@@ -24,11 +24,10 @@ import {
 } from './types';
 import { addItem, deleteItem, pasteItem, renameItem } from './utils/files';
 import { createLanguageList, getLanguageLabel, getLanguagePath } from './utils/language';
-import { getTranslationItems, translate } from './utils/translate';
+import { getTranslationItems, trans } from './utils/translate';
 import { createTree, createTreeStatus, pathToString, updateTreeStatus } from './utils/tree';
+import { LANGS_DATA } from '@/folder/utils/langs';
 
-const GOOGLE_TRANSLATE_LANGUAGES_URL =
-  'https://translation.googleapis.com/language/translate/v2/languages';
 
 @Module({
   namespaced: true,
@@ -133,14 +132,9 @@ export default class FolderModule extends VuexModule {
     const { googleTranslateApiKey } = this.context.rootState.settings.settings;
 
     let supportedLanguages: string[] = [];
-    if (googleTranslateApiKey) {
+    if (true || googleTranslateApiKey) {
       try {
-        const supportedLanguagesResponse = await fetch(
-          `${GOOGLE_TRANSLATE_LANGUAGES_URL}?key=${googleTranslateApiKey}`,
-        );
-        const supportedLanguagesBody = await supportedLanguagesResponse.json();
-
-        supportedLanguages = _.get('data.languages', supportedLanguagesBody).map(
+        supportedLanguages = _.get('data.languages', LANGS_DATA).map(
           (it: any) => it.language,
         );
         this.context.commit('setTranslationEnabled', true);
@@ -269,7 +263,7 @@ export default class FolderModule extends VuexModule {
 
       try {
         const start = new Date().getTime();
-        const result = await translate(
+        const result = await trans(
           item.sourceText,
           item.sourceLanguage,
           item.targetLanguage,

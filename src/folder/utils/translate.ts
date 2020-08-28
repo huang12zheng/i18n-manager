@@ -6,10 +6,11 @@ import { LoadedPath } from '@common/types';
 import { TranslatePayload, TranslationError, TreeItem } from '../types';
 import { getFormattedPath, getParsedFiles } from './files';
 import { getLanguageLabel, getLanguagePath } from './language';
+import translate, { setCORS } from 'google-translate-api-browser';
 
-const GOOGLE_TRANSLATE_URL = 'https://translation.googleapis.com/language/translate/v2';
+setCORS('http://cors-anywhere.herokuapp.com/');
 
-export const translate = async (
+export const trans = async (
   text: string,
   source: string,
   target: string,
@@ -21,33 +22,14 @@ export const translate = async (
   const targetLanguage = target.split('-')[0];
   const sourceLanguage = source.split('-')[0];
 
-  if (targetLanguage === sourceLanguage) {
+  if (target === source) {
     return;
   }
 
   try {
-    const response = await fetchAPI(
-      `${GOOGLE_TRANSLATE_URL}?key=${googleTranslateApiKey}`,
-      'POST',
-      {
-        target: targetLanguage,
-        source: sourceLanguage,
-        q: text,
-        format: 'text',
-      },
-      {
-        cancelToken: cancelToken.token,
-      },
-    );
-
-    if (response.status === 200) {
-      return getGoogleTranslateText(response.data);
-    }
-
-    return {
-      path,
-      error: TRANSLATE_ERRORS.genericGoogleTranslateError(sourceLanguage, targetLanguage),
-    };
+    const response = await translate(text, { from: source, to: target });
+    console.info(response);
+    return (response as any).text;
   } catch (e) {
     if (axios.isCancel(e)) {
       throw e;
