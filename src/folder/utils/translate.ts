@@ -1,15 +1,17 @@
-import axios, { AxiosRequestConfig, CancelTokenSource, Method } from 'axios';
-import _ from 'lodash/fp';
-import { Commit } from 'vuex';
+import axios, { AxiosRequestConfig, CancelTokenSource, Method } from "axios";
+import _ from "lodash/fp";
+import { Commit } from "vuex";
 
-import { LoadedPath } from '@common/types';
-import { TranslatePayload, TranslationError, TreeItem } from '../types';
-import { getFormattedPath, getParsedFiles } from './files';
-import { getLanguageLabel, getLanguagePath } from './language';
+import { LoadedPath } from "@common/types";
+import { TranslatePayload, TranslationError, TreeItem } from "../types";
+import { getFormattedPath, getParsedFiles } from "./files";
+import { getLanguageLabel, getLanguagePath } from "./language";
 
-const GOOGLE_TRANSLATE_URL = 'https://translation.googleapis.com/language/translate/v2';
+const { remote } = window.require('electron') as any;
 
-export const translate = async (
+let translate: Function;
+
+export const trans = async (
   text: string,
   source: string,
   target: string,
@@ -18,52 +20,34 @@ export const translate = async (
   cancelToken: CancelTokenSource,
 ): Promise<string | TranslationError | undefined> => {
   // Google translate doesn't support localized languages
-  const targetLanguage = target.split('-')[0];
-  const sourceLanguage = source.split('-')[0];
-
-  if (targetLanguage === sourceLanguage) {
+  source = source.replace('_', '-');
+  target = target.replace('_', '-');
+  if (target === source) {
     return;
   }
 
   try {
-    const response = await fetchAPI(
-      `${GOOGLE_TRANSLATE_URL}?key=${googleTranslateApiKey}`,
-      'POST',
-      {
-        target: targetLanguage,
-        source: sourceLanguage,
-        q: text,
-        format: 'text',
-      },
-      {
-        cancelToken: cancelToken.token,
-      },
-    );
-
-    if (response.status === 200) {
-      return getGoogleTranslateText(response.data);
+    if (!translate) {
+      translate = remote.require('@vitalets/google-translate-api');
     }
-
-    return {
-      path,
-      error: TRANSLATE_ERRORS.genericGoogleTranslateError(sourceLanguage, targetLanguage),
-    };
+    const response = await translate(text, { from: source, to: target, tld: 'cn' });
+    return response.text;
   } catch (e) {
     if (axios.isCancel(e)) {
       throw e;
     }
 
-    const errorMessage = _.getOr(e.message, 'response.data.error.message', e);
+    const errorMessage = _.getOr(e.message, "response.data.error.message", e);
 
     return {
       path,
-      error: TRANSLATE_ERRORS.googleTranslateError(errorMessage, sourceLanguage, targetLanguage),
+      error: TRANSLATE_ERRORS.googleTranslateError(errorMessage, source, target),
     };
   }
 };
 
 const getGoogleTranslateText = (response: any) =>
-  _.get('data.translations[0].translatedText', response);
+  _.get("data.translations[0].translatedText", response);
 
 function fetchAPI(url: string, method?: Method, data?: any, config?: AxiosRequestConfig) {
   const requestConfig: AxiosRequestConfig = {
@@ -102,7 +86,7 @@ export function getTranslationItems(
     }
 
     if (!source) {
-      commit('addTranslationError', {
+      commit("addTranslationError", {
         path: formattedPath,
         error: TRANSLATE_ERRORS.noSourceLanguage(payload.sourceLanguage),
       });
@@ -113,7 +97,7 @@ export function getTranslationItems(
     const sourceText = _.get(getLanguagePath(item.path, sourceIndex), folder as any) as string;
 
     if (!sourceText || sourceText.length === 0) {
-      commit('addTranslationError', {
+      commit("addTranslationError", {
         path: formattedPath,
         error: TRANSLATE_ERRORS.emptySourceField(payload.sourceLanguage),
       });

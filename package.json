@@ -1,6 +1,6 @@
 {
   "name": "i18n-manager",
-  "version": "3.0.3",
+  "version": "3.0.4",
   "main": "build/main/index.js",
   "license": "MIT",
   "description": "The app that will help to manage your app translations",
@@ -13,7 +13,7 @@
   "homepage": "./",
   "scripts": {
     "start": "cross-env NODE_ENV=development yarn start:main & yarn start:web",
-    "build": "cross-env NODE_ENV=production yarn build:all && electron-builder -wml",
+    "build": "cross-env NODE_ENV=production yarn build:all && electron-builder -l",
     "start:web": "vue-cli-service serve",
     "build:web": "vue-cli-service build",
     "start:main": "yarn build:main && electron --inspect=9229 --remote-debugging-port=9222 .",
@@ -68,6 +68,7 @@
     "electron-is-dev": "^1.2.0",
     "electron-updater": "^4.3.0",
     "fast-deep-equal": "^3.1.1",
+    "@vitalets/google-translate-api": "^4.0.0",
     "js-yaml": "^3.13.1",
     "lodash": "^4.17.15",
     "node-watch": "^0.6.3",
